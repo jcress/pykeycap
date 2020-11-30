@@ -1,0 +1,130 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+porting keycaps to python
+original: http://www.thingiverse.com/thing:468651
+"""
+import typing
+from dataclasses import dataclass
+
+import solid as s
+
+from dish import Dish
+from shapes import rounded_rectangle
+from stem import cherry_stem
+
+_SEGMENTS = 256
+
+_DISH = Dish()
+
+
+@dataclass
+class Cap:
+    """
+    Args:
+        key_x: width of the immediate bottom of the key
+        key_y: height of the immediate bottom of the key
+        top_width_delta: mm to subtract from bottom key width to create top key width
+        top_height_delta: mm to subtract from bottom key height to create top key height
+        z: how tall the total in the switch is before dishing
+        tilt: X rotation of the top. Top and dish obj are rotated
+        skew: Y skew of the top relative to the bottom. DCS has some, DSA has none (its centered)
+        shape: list of [x_units, y_units]
+            x_units: Length of unit of key in X direction. 1 normally, 1.5 for tab.
+            y_units: Length of unit of key in Y direction. 1 normally, 2 for the keypad enter.
+    """
+
+    key_x: float = 18.16
+    key_y: float = 18.16
+    top_x_delta: float = 6
+    top_y_delta: float = 4
+    z: float = 11.5
+    tilt: float = 0
+    skew: float = 0
+    shape: typing.List[float] = None
+    thickness: float = 3
+    connector: str = "mx"
+    dish: Dish = _DISH
+
+    def __post_init__(self):
+        if self.shape is None:
+            self.shape = [1, 1]
+
+        cap = s.difference()(self.cap_shape(0),
+                             s.translate([0, 0, -.5
+                                          ])(self.cap_shape(self.thickness)))
+
+        self.cap = s.union()(cap, self.connector_stem())
+
+    def cap_shape(self, thickness: float = 1):
+        """
+        for want of a better name. the shape with bowl, paramaterized to thickness
+        """
+
+        outside = s.difference()(s.cube([1000, 1000, 1000], center=True),
+                                 self.hull(thickness, modifier=2))
+
+        d = self.dish.dish
+        if self.dish.inverted:
+            cap = s.difference()(s.union()(self.hull(thickness), d), outside)
+
+        else:
+            cap = s.difference()(self.hull(thickness), d)
+
+        return cap
+
+    def connector_stem(self, rotate: float = 0):
+        """
+        create
+        """
+
+        # mask used to exclude anything not inside the cap
+        inside = s.difference()(s.translate([0, 0, 50])(s.cube([100, 100, 100],
+                                                               center=True)),
+                                self.cap_shape(3))
+
+        if self.connector == "mx":
+            connector = cherry_stem(rotate=rotate)
+
+        else:
+            # raise not implemented
+            pass
+
+        return s.difference()(connector, inside)
+
+    def hull(self, thickness: float, modifier: float = 1):
+        """
+        basic shape without dish
+        """
+
+        dims = [self.key_x * self.shape[0], self.key_y * self.shape[1]]
+        bottom = rounded_rectangle([d - thickness for d in dims] + [.001], 1.5)
+        top = rounded_rectangle([
+            dims[0] - thickness - self.top_x_delta * modifier,
+            dims[1] - thickness - self.top_y_delta * modifier, .001
+        ], 1.5)
+
+        return s.hull()(bottom, s.translate([0, self.skew, self.z * modifier
+                                             ])(s.rotate([-self.tilt, 0,
+                                                          0])(top)))
+
+
+if __name__ == "__main__":
+    import subprocess
+    out_dir = subprocess.check_output("git rev-parse --show-toplevel",
+                                      shell=True,
+                                      text=True)
+
+    path = f"{out_dir.rstrip()}/scad/cap.scad"
+
+    def assembly():
+        # out = Cap().cap
+        out = s.union()(Cap(dish=Dish(inverted=False)).cap,
+                        s.translate([0, 20,
+                                     0])(Cap(dish=Dish(inverted=True)).cap))
+
+        return out
+
+    out = assembly()
+
+    s.scad_render_to_file(out, path, include_orig_code=False)
