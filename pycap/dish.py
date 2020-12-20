@@ -8,7 +8,7 @@ import typing
 from dataclasses import dataclass
 import solid as s
 
-_SEGMENTS = 256
+_SEGMENTS = 32
 
 
 def rad_chord(l, h):
@@ -35,17 +35,12 @@ class Dish:
     radius: radius of dish obj, the Sphere or Cylinder that cuts into the keycap
     """
 
+    top_dims: typing.List[float] = None
     dish_type: typing.Literal["sphere", "cylinder", "side_cyl"] = "cylinder"
-    key_x: float = 12.16
-    key_y: float = 14.16
     key_z: float = 11.5
-    skew_x: float = 0
-    skew_y: float = 0
     depth: float = 1
-    tilt: float = 0
-    skew: float = 0
-    segments: int = _SEGMENTS
     inverted: bool = False
+    segments: int = _SEGMENTS
 
     def __post_init__(self):
         """
@@ -54,6 +49,10 @@ class Dish:
         calculates
             chord_length: y offest
         """
+        if self.top_dims is None:
+            self.top_dims = [12.16, 14.16]
+
+        self.key_x, self.key_y = self.top_dims
 
         if self.dish_type == "cylinder":
             c_length = chord_length(self.key_x, self.depth)
@@ -69,13 +68,16 @@ class Dish:
             else:
                 self.dish = s.translate([0, c_length, 0])(self.dish)
 
-            self.dish = s.rotate([90 - self.tilt, 0, 0])(self.dish)
-
-            self.dish = s.translate(
-                [self.skew_x, self.skew + self.skew_y, self.key_z])(self.dish)
+            self.dish = s.rotate([90, 0, 0])(self.dish)
 
         elif self.dish_type == "sphere":
-            self.chord = pow((pow(key_x, 2) + pow(self.key_y, 2)), .5)
-            self.chord_length(self.chord, self.depth)
+            self.chord = pow((pow(self.key_x, 2) + pow(self.key_y, 2)), .5)
+
+            c_length = chord_length(self.chord, self.depth)
+
             self.radius = rad_chord(self.chord, self.depth)
-            self.dish = s.sphere(r=self.radius, segments=self.segments)
+            self.dish = s.scale([
+                self.chord / 2 / self.depth, self.chord / 2 / self.depth
+            ])(s.sphere(r=self.depth, segments=self.segments))
+
+        self.dish = s.translate([0, 0, self.key_z])(self.dish)

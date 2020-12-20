@@ -1,20 +1,18 @@
 
 
-translate(v = [-5.0000000000, -5.0000000000, 0]) {
-	linear_extrude(height = 10) {
-		hull() {
-			translate(v = [2, 2, 0]) {
-				circle($fn = 32, r = 2);
-			}
-			translate(v = [8, 2, 0]) {
-				circle($fn = 32, r = 2);
-			}
-			translate(v = [8, 8, 0]) {
-				circle($fn = 32, r = 2);
-			}
-			translate(v = [2, 8, 0]) {
-				circle($fn = 32, r = 2);
-			}
+translate(v = [-10.0000000000, -5.0000000000, 0]) {
+	hull() {
+		translate(v = [0.5000000000, 0.5000000000, 0]) {
+			sphere($fn = 32, r = 0.5000000000);
+		}
+		translate(v = [19.5000000000, 0.5000000000, 0]) {
+			sphere($fn = 32, r = 0.5000000000);
+		}
+		translate(v = [19.5000000000, 9.5000000000, 0]) {
+			sphere($fn = 32, r = 0.5000000000);
+		}
+		translate(v = [0.5000000000, 9.5000000000, 0]) {
+			sphere($fn = 32, r = 0.5000000000);
 		}
 	}
 }

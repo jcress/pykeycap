@@ -7,6 +7,8 @@ import typing
 
 import solid as s
 
+from shapes import rounded_rectangle
+
 
 def square_key(size, top_delta, progress):
     """
@@ -21,23 +23,13 @@ def square_key(size, top_delta, progress):
     return s.square(dims, center=True)
 
 
-def rounded_rectangle(
-    dims: typing.List[float],
-    radius: float = 2,
-    segments: int = 32,
-):
+def rounded_key(size, top_delta, progress, radius=2):
     """
     """
-    x, y, z = dims
 
-    coordinates = [[radius, radius], [x - radius, radius],
-                   [x - radius, y - radius], [radius, y - radius]]
-    corner = s.circle(r=radius, segments=segments)
+    dims = [size[i] - top_delta[i] * progress for i in [0, 1]]
 
-    out = s.hull()(*[s.translate(c + [0])(corner) for c in coordinates])
-    out = s.translate([-x / 2, -y / 2, 0])(s.linear_extrude(height=z)(out))
-
-    return out
+    return rounded_rectangle(dims, radius=radius)
 
 
 if __name__ == "__main__":
